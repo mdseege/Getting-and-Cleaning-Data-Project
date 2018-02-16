@@ -56,5 +56,5 @@ tidy <- xdata%>%
   group_by(Subject, Activity)%>%
   summarize_all(mean)
 
-#write tidy.csv file
-write.csv(tidy, "tidy.csv")
+#write tidy.txt file
+write.table(tidy, "tidy.txt", row.name = FALSE)
