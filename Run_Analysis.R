@@ -55,3 +55,5 @@ names(xdata)[2] <- "Activity"
 tidy <- xdata%>%
   group_by(Subject, Activity)%>%
   summarize_all(mean)
+#####
+write.table(tidy,)
