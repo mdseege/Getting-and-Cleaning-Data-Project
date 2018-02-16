@@ -3,47 +3,55 @@ unzip("gcd.zip")
 setwd("UCI HAR Dataset")
 library(dplyr)
 
-# Function to read in data as structured
-read_har_data <- function(folder) {
-  
-  # Get x data
-  xdat <- read.table(file = paste0(folder, "/", "X_", folder, ".txt"))
-  # Get names of x variables
-  xnames <- read.table(file = "features.txt", stringsAsFactors = F) 
-  # Get training/test labels
-  ydat <- read.table(file = paste0(folder, "/", "y_", folder, ".txt"))
-  # Get subject information
-  subj <- read.table(file = paste0(folder, "/", "subject_", folder, ".txt"))
-  
-  # Set names of x data
-  names(xdat) <- make.names(xnames$V2, unique = T)
-  
-  # Add labels in as a column in the x data
-  xdat$label <- ydat$V1
-  xdat$Subject <- subj$V1
-  
-  xdat_keep <- select(xdat, matches("Subject|label|mean|std"))
-  
-  # Get activity labels
-  activity <- read.table(file = "activity_labels.txt", stringsAsFactors = F)
-  names(activity) <- c("label", "Activity")
-  
-  # Join activity information with xdat_keep
-  # This will add an Activity column with useful labels
-  xdat_keep <- left_join(xdat_keep, activity)
-  
-  xdat_keep <- select(xdat_keep, -label) # Get rid of label - we don't need it anymore
-  return(xdat_keep)
-}
+#download X train and X test data 
+xtrain <- read.table("train/X_train.txt")
+xtest <- read.table("test/X_test.txt")
 
-alldata <- bind_rows(read_har_data("test"),
-                     read_har_data("train")) %>%
-  select(Subject, Activity, 1:86)
+#bind X test and X train data by rows
+xdata <- rbind(xtrain, xtest)
 
-tidy_summary <- alldata %>%
-  group_by(Subject, Activity) %>%
-  summarize_all(mean)
+#download features data 
+features <- read.table("features.txt", stringsAsFactors = F)
 
-tidy_summary2 <- alldata %>%
-  group_by(Activity) %>%
+#replace column names in xdata with features data from previous step 
+names(xdata) <- make.names(features$V2, unique = T)
+
+#reduce columns to include only ones with mean or std
+xdata <- select(xdata, matches("mean|std"))
+
+#download subject train and subject test data
+subtrain <- read.table("train/subject_train.txt")
+subtest <- read.table("test/subject_test.txt")
+
+#bind subtrain and subtest data by rows
+subject <- rbind(subtrain, subtest)
+
+#add column named Subject to xdata with data with subject created above 
+xdata$Subject <- subject$V1
+
+#download y train and ytest data
+ytrain <- read.table("train/y_train.txt")
+ytest <- read.table("test/y_test.txt")
+
+#bind ytrain and ytest by rows 
+activity <- rbind(ytrain, ytest)
+
+#add column named V1 to xdata with activity data created above
+xdata$V1 <- activity$V1
+
+#download activity labels data 
+actlab <- read.table("activity_labels.txt")
+
+#left join column to xdata with actlab created above
+xdata <- left_join(xdata, actlab)
+
+#select colunmns in desired order ommiting coulnmn V1
+xdata <- select(xdata,Subject, V2, 1:86, -V1)
+
+#change column 2 name to Activity
+names(xdata)[2] <- "Activity"
+
+#create tidy data that averages data by Subject then Activity 
+tidy <- xdata%>%
+  group_by(Subject, Activity)%>%
   summarize_all(mean)
